@@ -2,6 +2,12 @@ export const modName = 'Compendium Folders';
 const mod = 'compendium-folders';
 const FOLDER_LIMIT = 8
 
+// ==========================
+// Module Merge Utility class
+// ==========================
+export class ModuleMerge {
+
+}
 
 // ==========================
 // Utility functions
