@@ -5,8 +5,45 @@ const FOLDER_LIMIT = 8
 // ==========================
 // Module Merge Utility class
 // ==========================
+export class ModuleMergeFolder {
+    constructor(title,compendiums,pathToFolder,folders){
+        this.title = title;
+        this.compendiumList = compendiums;
+        this.pathToFolder = pathToFolder;
+        this.folderList = folders
+    }
+    get path(){return this.pathToFolder}
+    set path(path){this.pathToFolder = path}
+    get compendiums(){return this.compendiumList;}
+    get folders(){return this.folderList;}
+    get path(){return this.pathToFolder;}
+    get depth(){return this.pathToFolder.length}
+}
 export class ModuleMerge {
 
+    static createDefaultFolder(title,compendiums){
+        return new ModuleMergeFolder(title,compendiums,[],[]);
+    }
+    
+    //Returns a folder object with parent of @{parent}
+    static createChildFolder(parent,title,compendiums){
+        let newFolderPath = Array.from(parent.pathToFolder)
+        newFolderPath.push(parent.title);
+        parent.folderList.push(title);
+        return new ModuleMergeFolder(title,compendiums,newFolderPath,[]);
+    }
+    static saveDefaultFolders(modName,folders){
+        let existingDefaults = game.settings.get(mod,'default-folders');
+        if (ModuleMerge.isModuleNew(modName,existingDefaults)){
+            existingDefaults[modName] = folders;
+            game.settings.set(mod,'default-folders',existingDefaults)
+            newMods.push(modName);
+        }
+        
+    }
+    static isModuleNew(modName,defaults){
+        return !Object.keys(defaults).includes(modName);
+    }
 }
 
 // ==========================
@@ -1087,6 +1124,12 @@ export class Settings{
             type: Object,
             default:{}
         });
+        game.settings.register(mod,'default-folders',{
+            scope:'world',
+            config:false,
+            type: Object,
+            default:{}
+        })
     }
     static updateFolder(folderData){
         let existingFolders = game.settings.get(mod,'cfolders');
@@ -1109,9 +1152,27 @@ export class Settings{
 // ==========================
 // Main hook setup
 // ==========================
+Hooks.once('ready',async function(){
+   
+   
+})
 var eventsSetup = []
+var newMods = []
 
 Hooks.once('setup',async function(){
+    Settings.registerSettings()
+    game.CFModuleMerge = ModuleMerge;
+    // ------
+    // Testing ModuleMerge
+    // ------
+    let defaultFolders = [];
+    let macrosFolder = game.CFModuleMerge.createDefaultFolder("Macro",["generic-macros.module"]);
+    let macroActorsFolder = game.CFModuleMerge.createChildFolder(macrosFolder,["actor1.module","actor2.module"]);
+    defaultFolders.push(macrosFolder,macroActorsFolder);
+    game.CFModuleMerge.saveDefaultFolders("TestModule",defaultFolders);
+    console.log(newMods);
+    // ------
+    
     let hook = 'renderCompendiumDirectory';
 
     //Fix for pf1 system
@@ -1120,7 +1181,7 @@ Hooks.once('setup',async function(){
     }
     Hooks.on(hook, async function() {
 
-        Settings.registerSettings()
+        //Settings.registerSettings()
         
         await loadTemplates(["modules/compendium-folder/compendium-folder-edit.html"]);
         let isPopout = document.querySelector('#compendium-popout') != null;
